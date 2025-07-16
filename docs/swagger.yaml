@@ -1,0 +1,85 @@
+basePath: /
+host: localhost:8080
+info:
+  contact:
+    email: you@example.com
+    name: Developer
+  description: Multi-Tenant Messaging system with RabbitMQ and Postgres
+  title: Multi-Tenant Messaging API
+  version: "1.0"
+paths:
+  /messages:
+    get:
+      description: Retrieves messages using cursor-based pagination
+      parameters:
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get messages with cursor pagination
+      tags:
+      - messages
+  /tenants:
+    post:
+      description: Creates a new tenant queue and consumer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create new tenant
+      tags:
+      - tenants
+  /tenants/{id}:
+    delete:
+      description: Stops consumer, deletes queue
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete tenant
+      tags:
+      - tenants
+  /tenants/{id}/config/concurrency:
+    put:
+      consumes:
+      - application/json
+      description: Updates worker pool size for tenant
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Concurrency config
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: integer
+          type: object
+      responses:
+        "204":
+          description: No Content
+      summary: Update concurrency
+      tags:
+      - tenants
+swagger: "2.0"
