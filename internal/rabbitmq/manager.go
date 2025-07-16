@@ -35,6 +35,7 @@ func (m *Manager) CreateTenantQueue(tenantID string, concurrency int) error {
 	}
 
 	queueName := "tenant_" + tenantID + "_queue"
+
 	_, err = ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
 		return err
@@ -60,18 +61,28 @@ func (m *Manager) CreateTenantQueue(tenantID string, concurrency int) error {
 
 func (m *Manager) StopTenant(tenantID string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	c, ok := m.consumers[tenantID]
+	m.mu.Unlock()
 	if !ok {
+		log.Printf("[Manager] not found tenant %s", tenantID)
 		return nil
 	}
 
 	close(c.StopCh)
 	c.Pool.Stop()
-	c.Channel.QueueDelete(c.Queue, false, false, false)
+
+	if _, err := c.Channel.QueueDelete(c.Queue, false, false, false); err != nil {
+		log.Printf("[Manager] QueueDelete error: %v", err)
+	} else {
+		log.Printf("[Manager] Queue deleted: %s", c.Queue)
+	}
+
 	c.Channel.Close()
+
+	m.mu.Lock()
 	delete(m.consumers, tenantID)
+	m.mu.Unlock()
+
 	log.Printf("[Manager] Stopped consumer for tenant %s", tenantID)
 	return nil
 }
